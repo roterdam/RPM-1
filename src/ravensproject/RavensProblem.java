@@ -22,7 +22,7 @@ public class RavensProblem {
     private boolean hasVisualRepresentation; //true if visual representations are included
     private boolean hasVerbalRepresentation; //true if verbal representations are included
     
-    private int correctAnswer;
+    public int correctAnswer;
     private int givenAnswer;
     private boolean answerReceived;
     
