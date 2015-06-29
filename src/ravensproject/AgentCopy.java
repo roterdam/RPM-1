@@ -21,7 +21,7 @@ import javax.imageio.ImageIO;
  * These methods will be necessary for the project's main method to run.
  * 
  */
-public class Agent {
+public class AgentCopy {
 	/**
 	 * The default constructor for your Agent. Make sure to execute any
 	 * processing necessary before your Agent starts solving problems here.
@@ -30,7 +30,7 @@ public class Agent {
 	 * main().
 	 * 
 	 */
-	public Agent() {
+	public AgentCopy() {
 
 	}
 
@@ -63,6 +63,8 @@ public class Agent {
 	public int Solve(RavensProblem problem) {
 		System.out.println(problem.getName());
 
+		boolean debug = true;
+
 		HashMap<String, FigureFrame> figureFrames = new HashMap<String, FigureFrame>();
 		HashMap<String, Double> finalVotes = new HashMap<String, Double>();
 
@@ -73,27 +75,41 @@ public class Agent {
 			for (String answerName : answerNames) {
 				finalVotes.put(answerName, 0.0);
 			}
-			// Voters
+
+			// Visual first pass
 			calculateRatios(problem, false, figureFrames, figureNames);
+
+			// voteABRatio(problem, figureFrames, answerNames, false,
+			// finalVotes);
+			// voteACRatio(problem, figureFrames, answerNames, false,
+			// finalVotes);
 			voteABDiff(problem, figureFrames, answerNames, false, finalVotes);
+			// voteACDiff(problem, figureFrames, answerNames, false,
+			// finalVotes);
 			voteACSym(problem, answerNames, false, finalVotes);
 			voteABMatch(problem, answerNames, false, finalVotes);
 
 			aggregateVotes(problem, true, finalVotes, answerNames);
+
+			// Has verbal
+			if (problem.hasVerbal()) {
+
+			}
 		} else if (problem.getProblemType().equals("3x3")) {
 			String[] figureNames = { "A", "B", "C", "D", "E", "F", "G", "H", "1", "2", "3", "4", "5", "6", "7", "8" };
 			String[] answerNames = { "1", "2", "3", "4", "5", "6", "7", "8" };
 			for (String answerName : answerNames) {
 				finalVotes.put(answerName, 0.0);
 			}
-			// Voters
+
+			// Visual first pass
 			calculateRatios(problem, false, figureFrames, figureNames);
+
 			voteABCRatio(problem, figureFrames, answerNames, false, finalVotes);
 			voteABCDiff(problem, figureFrames, answerNames, false, finalVotes);
 			voteABCMatch(problem, answerNames, false, finalVotes);
 			voteAGSym(problem, answerNames, false, finalVotes);
-			voteACHTrans(problem, answerNames, false, finalVotes);
-			
+			voteACHTrans(problem, answerNames, true, finalVotes);
 			aggregateVotes(problem, true, finalVotes, answerNames);
 		}
 
@@ -101,10 +117,13 @@ public class Agent {
 	}
 
 	private void voteACHTrans(RavensProblem problem, String[] answerNames, boolean debug, HashMap<String, Double> finalVotes) {
+		double min = 999;
 		double ACmatch = compareFigureHTrans(problem, "A", "C");
 		double DFmatch = compareFigureHTrans(problem, "D", "F");
 
 		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
+
 		// Place vote
 		for (String answerName : answerNames) {
 			if (ACmatch > 0.75 && DFmatch > 0.75 && compareFigureHTrans(problem, "G", answerName) > 0.75) {
@@ -114,6 +133,20 @@ public class Agent {
 				votes.put(answerName, compareFigureHTrans(problem, "G", answerName));
 				 finalVotes.put(answerName, finalVotes.get(answerName) + 1);
 			}
+		}
+
+		// Debugging
+		if (debug) {
+			System.out.println("AC match: " + ACmatch + " DF Match: " + DFmatch);
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			System.out.println("Voted: " + vote);
 		}
 	}
 
@@ -126,6 +159,8 @@ public class Agent {
 
 			int i1 = 0;
 			int i2 = image1.getWidth() / 2;
+			int j1 = 0;
+			int j2 = 0;
 			boolean hasBlack = false;
 			while ((i1 < image1.getWidth() / 2) && (hasBlack == false)) {
 				for (int j = 0; j < image1.getHeight(); j++) {
@@ -176,12 +211,17 @@ public class Agent {
 	}
 
 	private void voteACSym(RavensProblem problem, String[] answerNames, boolean debug, HashMap<String, Double> finalVotes) {
+		double min = 999;
 		double ACmatch = compareFigureSym(problem, "A", "C");
 
 		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
+		double normal = 0;
 
 		// Place vote
 		for (String answerName : answerNames) {
+			// if (ACmatch > 0.98 && compareFigureSym(problem, "B", answerName)
+			// > 0.98) {
 			if (Math.abs(ACmatch - compareFigureSym(problem, "B", answerName)) < 0.02) {
 				votes.put(answerName, 0.0);
 
@@ -190,13 +230,30 @@ public class Agent {
 				finalVotes.put(answerName, finalVotes.get(answerName) + 1);
 			}
 		}
+
+		// Debugging
+		if (debug) {
+			System.out.println("AC match: " + ACmatch);
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			System.out.println("Voted: " + vote);
+		}
+
 	}
 
 	private void voteAGSym(RavensProblem problem, String[] answerNames, boolean debug, HashMap<String, Double> finalVotes) {
+		double min = 999;
 		double AGmatch = compareFigureSym(problem, "A", "G");
 		double BHmatch = compareFigureSym(problem, "B", "H");
 
 		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
 
 		// Place vote
 		for (String answerName : answerNames) {
@@ -208,6 +265,21 @@ public class Agent {
 				finalVotes.put(answerName, finalVotes.get(answerName) + 1);
 			}
 		}
+
+		// Debugging
+		if (debug) {
+			System.out.println("AG match: " + AGmatch);
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			System.out.println("Voted: " + vote);
+		}
+
 	}
 
 	private double compareFigureSym(RavensProblem problem, String figureName1, String figureName2) {
@@ -237,40 +309,78 @@ public class Agent {
 	}
 
 	private void voteABMatch(RavensProblem problem, String[] answerNames, boolean debug, HashMap<String, Double> finalVotes) {
+		double min = 999;
 		double ABmatch = compareFigure(problem, "A", "B");
 
 		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
 		double normal = 0;
+
 		// Calculate votes
 		for (String answerName : answerNames) {
 			double match = compareFigure(problem, "C", answerName);
 			votes.put(answerName, Math.abs(ABmatch - match));
 			normal += Math.abs(ABmatch - match);
 		}
+
 		// Normalize votes
 		for (String answerName : answerNames) {
 			double normalVote = votes.get(answerName) / normal;
 			votes.put(answerName, normalVote);
 			finalVotes.put(answerName, finalVotes.get(answerName) + normalVote);
 		}
+
+		// Debugging
+		if (debug) {
+			System.out.println("AB match: " + ABmatch);
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			System.out.println("Voted: " + vote);
+		}
+
 	}
 
 	private void voteABCMatch(RavensProblem problem, String[] answerNames, boolean debug, HashMap<String, Double> finalVotes) {
+		double min = 999;
 		double ABmatch = compareFigure(problem, "A", "C");
 		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
 		double normal = 0;
+
 		// Calculate votes
 		for (String answerName : answerNames) {
 			double match = compareFigure(problem, "G", answerName);
 			votes.put(answerName, Math.abs(ABmatch - match));
 			normal += Math.abs(ABmatch - match);
 		}
+
 		// Normalize votes
 		for (String answerName : answerNames) {
 			double normalVote = votes.get(answerName) / normal;
 			votes.put(answerName, normalVote);
 			finalVotes.put(answerName, finalVotes.get(answerName) + normalVote);
 		}
+
+		// Debugging
+		if (debug) {
+			System.out.println("ABC match: " + ABmatch);
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			System.out.println("Voted: " + vote);
+		}
+
 	}
 
 	private double compareFigure(RavensProblem problem, String figureName1, String figureName2) {
@@ -310,6 +420,7 @@ public class Agent {
 				vote = answerName;
 			}
 		}
+
 		if (debug) {
 			for (String answerName : answerNames) {
 				System.out.println(answerName + ": " + finalVotes.get(answerName));
@@ -329,12 +440,56 @@ public class Agent {
 				frame.setRatioBlack(blackRatio(thisFigure));
 			} catch (IOException e) {
 			}
+			if (debug) {
+				System.out.println("Ratio: " + frame.getRatioBlack());
+				printObjects(thisFigure);
+				printBlackRatio(thisFigure);
+			}
+
 			figureFrames.put(figureName, frame);
+		}
+	}
+
+	private void voteABRatio(RavensProblem problem, HashMap<String, FigureFrame> figureFrames, String[] answerNames, boolean debug,
+			HashMap<String, Double> finalVotes) {
+		double min = 999;
+		double ABratio = figureFrames.get("A").getRatioBlack() / figureFrames.get("B").getRatioBlack();
+		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
+		double normal = 0;
+
+		// Calculate votes
+		for (String answerName : answerNames) {
+			double ratio = figureFrames.get("C").getRatioBlack() / figureFrames.get(answerName).getRatioBlack();
+			votes.put(answerName, Math.abs(ABratio - ratio));
+			normal += Math.abs(ABratio - ratio);
+		}
+
+		// Normalize votes
+		for (String answerName : answerNames) {
+			double normalVote = votes.get(answerName) / normal;
+			votes.put(answerName, normalVote);
+			finalVotes.put(answerName, finalVotes.get(answerName) + normalVote);
+		}
+
+		// Debugging
+		if (debug) {
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			int correct = problem.checkAnswer(Integer.valueOf(vote));
+			System.out.println("Correct: " + correct + " Voted: " + vote);
 		}
 	}
 
 	private void voteABCRatio(RavensProblem problem, HashMap<String, FigureFrame> figureFrames, String[] answerNames, boolean debug,
 			HashMap<String, Double> finalVotes) {
+		double min = 999;
 		double ABratio = 0;
 		if (figureFrames.get("A").getRatioBlack() != 0) {
 			ABratio = figureFrames.get("A").getRatioBlack() / figureFrames.get("C").getRatioBlack()
@@ -343,13 +498,17 @@ public class Agent {
 
 		}
 		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
 		double normal = 0;
+
 		// Calculate votes
+
 		for (String answerName : answerNames) {
 			double ratio = figureFrames.get("G").getRatioBlack() / figureFrames.get(answerName).getRatioBlack();
 			votes.put(answerName, Math.abs(ABratio - ratio));
 			normal += Math.abs(ABratio - ratio);
 		}
+
 		// Normalize votes
 		for (String answerName : answerNames) {
 			double normalVote = votes.get(answerName) / normal;
@@ -360,35 +519,150 @@ public class Agent {
 			} else {
 				finalVotes.put(answerName, finalVotes.get(answerName) + 0);
 			}
+			// finalVotes.put(answerName, finalVotes.get(answerName) +
+			// normalVote);
+		}
+		// Debugging
+		if (debug) {
+			System.out.println("A:B:C:: " + figureFrames.get("A").getRatioBlack() / figureFrames.get("B").getRatioBlack() + " : "
+					+ figureFrames.get("B").getRatioBlack() / figureFrames.get("C").getRatioBlack());
+			System.out.println("D:E:F:: " + figureFrames.get("D").getRatioBlack() / figureFrames.get("E").getRatioBlack() + " : "
+					+ figureFrames.get("E").getRatioBlack() / figureFrames.get("F").getRatioBlack());
+			System.out.println("G:H:: " + figureFrames.get("G").getRatioBlack() / figureFrames.get("H").getRatioBlack());
+			System.out.println("ideal ratio: " + ABratio);
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			System.out.println("Voted: " + vote);
 		}
 	}
 
-	private void voteABDiff(RavensProblem problem, HashMap<String, FigureFrame> figureFrames, String[] answerNames, boolean debug,
+	private void voteACRatio(RavensProblem problem, HashMap<String, FigureFrame> figureFrames, String[] answerNames, boolean debug,
 			HashMap<String, Double> finalVotes) {
-		double ABratio = figureFrames.get("A").getRatioBlack() - figureFrames.get("B").getRatioBlack();
+		double min = 999;
+		double ABratio = figureFrames.get("A").getRatioBlack() / figureFrames.get("C").getRatioBlack();
 		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
 		double normal = 0;
+
 		// Calculate votes
 		for (String answerName : answerNames) {
-			double ratio = figureFrames.get("C").getRatioBlack() - figureFrames.get(answerName).getRatioBlack();
+			double ratio = figureFrames.get("B").getRatioBlack() / figureFrames.get(answerName).getRatioBlack();
 			votes.put(answerName, Math.abs(ABratio - ratio));
 			normal += Math.abs(ABratio - ratio);
 		}
+
 		// Normalize votes
 		for (String answerName : answerNames) {
 			double normalVote = votes.get(answerName) / normal;
 			votes.put(answerName, normalVote);
 			finalVotes.put(answerName, finalVotes.get(answerName) + normalVote);
 		}
+
+		// Debugging
+		if (debug) {
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			int correct = problem.checkAnswer(Integer.valueOf(vote));
+			System.out.println("Correct: " + correct + " Voted: " + vote);
+		}
+	}
+
+	private void voteABDiff(RavensProblem problem, HashMap<String, FigureFrame> figureFrames, String[] answerNames, boolean debug,
+			HashMap<String, Double> finalVotes) {
+		double min = 999;
+		double ABratio = figureFrames.get("A").getRatioBlack() - figureFrames.get("B").getRatioBlack();
+		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
+		double normal = 0;
+
+		// Calculate votes
+		for (String answerName : answerNames) {
+			double ratio = figureFrames.get("C").getRatioBlack() - figureFrames.get(answerName).getRatioBlack();
+			votes.put(answerName, Math.abs(ABratio - ratio));
+			normal += Math.abs(ABratio - ratio);
+		}
+
+		// Normalize votes
+		for (String answerName : answerNames) {
+			double normalVote = votes.get(answerName) / normal;
+			votes.put(answerName, normalVote);
+			finalVotes.put(answerName, finalVotes.get(answerName) + normalVote);
+		}
+
+		// Debugging
+		if (debug) {
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			System.out.println("Voted: " + vote);
+		}
+	}
+
+	private void voteACDiff(RavensProblem problem, HashMap<String, FigureFrame> figureFrames, String[] answerNames, boolean debug,
+			HashMap<String, Double> finalVotes) {
+		double min = 999;
+		double ABratio = figureFrames.get("A").getRatioBlack() - figureFrames.get("C").getRatioBlack();
+		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
+		double normal = 0;
+
+		// Calculate votes
+		for (String answerName : answerNames) {
+			double ratio = figureFrames.get("B").getRatioBlack() - figureFrames.get(answerName).getRatioBlack();
+			votes.put(answerName, Math.abs(ABratio - ratio));
+			normal += Math.abs(ABratio - ratio);
+		}
+
+		// Normalize votes
+		for (String answerName : answerNames) {
+			double normalVote = votes.get(answerName) / normal;
+			votes.put(answerName, normalVote);
+			finalVotes.put(answerName, finalVotes.get(answerName) + normalVote);
+		}
+
+		// Debugging
+		if (debug) {
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			int correct = problem.checkAnswer(Integer.valueOf(vote));
+			System.out.println("Correct: " + correct + " Voted: " + vote);
+		}
 	}
 
 	private void voteABCDiff(RavensProblem problem, HashMap<String, FigureFrame> figureFrames, String[] answerNames, boolean debug,
 			HashMap<String, Double> finalVotes) {
+		double min = 999;
 		double ABratio = figureFrames.get("G").getRatioBlack() - figureFrames.get("H").getRatioBlack();
 
 		HashMap<String, Double> votes = new HashMap<String, Double>();
+		String vote = "";
 		double normal = 0;
+
 		// Calculate votes
+
 		for (String answerName : answerNames) {
 			double ratio = figureFrames.get("H").getRatioBlack() - figureFrames.get(answerName).getRatioBlack();
 			votes.put(answerName, Math.abs(ABratio - ratio));
@@ -400,6 +674,29 @@ public class Agent {
 			double normalVote = votes.get(answerName) / normal;
 			votes.put(answerName, normalVote);
 			finalVotes.put(answerName, finalVotes.get(answerName) + normalVote);
+		}
+
+		// Debugging
+		if (debug) {
+			System.out.println("AB: " + (figureFrames.get("A").getRatioBlack() - figureFrames.get("B").getRatioBlack()) + " DE: "
+					+ (figureFrames.get("D").getRatioBlack() - figureFrames.get("E").getRatioBlack()));
+			for (String answerName : answerNames) {
+				System.out.println(answerName + ": " + votes.get(answerName) + " " + finalVotes.get(answerName));
+
+				if (votes.get(answerName) < min) {
+					min = votes.get(answerName);
+					vote = answerName;
+				}
+			}
+			System.out.println("Voted: " + vote);
+		}
+	}
+
+	private void printBlackRatio(RavensFigure thisFigure) {
+		try { // Required by Java for ImageIO.read
+			double ratioBlack = blackRatio(thisFigure);
+			System.out.println("Ratio: " + ratioBlack);
+		} catch (Exception ex) {
 		}
 	}
 
@@ -425,4 +722,15 @@ public class Agent {
 		}
 	}
 
+	private void printObjects(RavensFigure figure) {
+		for (String objectName : figure.getObjects().keySet()) {
+			System.out.println("  " + objectName);
+			RavensObject thisObject = figure.getObjects().get(objectName);
+			for (String attributeName : thisObject.getAttributes().keySet()) {
+				String attributeValue = thisObject.getAttributes().get(attributeName);
+				System.out.println("    " + attributeName + ": " + attributeValue);
+
+			}
+		}
+	}
 }
